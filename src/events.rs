@@ -206,13 +206,20 @@ impl<T: System> EventsDecoder<T> {
 
     /// Decode events.
     pub fn decode_events(&self, input: &mut &[u8]) -> Result<Vec<(Phase, Raw)>, Error> {
+        log::info!("decode: {}", hex::encode(&input));
         let compact_len = <Compact<u32>>::decode(input)?;
         let len = compact_len.0 as usize;
 
         let mut r = Vec::new();
         for _ in 0..len {
             // decode EventRecord
-            let phase = Phase::decode(input)?;
+            let phase = match Phase::decode(input) {
+                Ok(p) => p,
+                Err(e) => {
+                    log::error!("decode: {}", hex::encode(&input));
+                    return Err(e.into());
+                }
+            };
             let module_variant = input.read_byte()?;
 
             let module = self.metadata.module_with_events(module_variant)?;
