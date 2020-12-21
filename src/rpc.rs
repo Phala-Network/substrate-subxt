@@ -39,8 +39,10 @@ use jsonrpsee::{
         Params,
     },
 };
-use sc_rpc_api::state::ReadProof;
-use serde::Serialize;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use sp_core::{
     storage::{
         StorageChangeSet,
@@ -61,7 +63,6 @@ use sp_runtime::{
     },
     traits::Hash,
 };
-use sp_transaction_pool::TransactionStatus;
 use sp_version::RuntimeVersion;
 
 use crate::{
@@ -98,9 +99,9 @@ impl From<u32> for BlockNumber {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq, Default)]
-#[serde(rename_all = "camelCase")]
 /// System properties for a Substrate-based runtime
+#[derive(serde::Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct SystemProperties {
     /// The address format
     pub ss58_format: u8,
@@ -108,6 +109,54 @@ pub struct SystemProperties {
     pub token_decimals: u8,
     /// The symbol of the native token
     pub token_symbol: String,
+}
+
+/// Possible transaction status events.
+///
+/// # Note
+///
+/// This is copied from `sp-transaction-pool` to avoid a dependency on that crate. Therefore it
+/// must be kept compatible with that type from the target substrate version.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransactionStatus<Hash, BlockHash> {
+    /// Transaction is part of the future queue.
+    Future,
+    /// Transaction is part of the ready queue.
+    Ready,
+    /// The transaction has been broadcast to the given peers.
+    Broadcast(Vec<String>),
+    /// Transaction has been included in block with given hash.
+    InBlock(BlockHash),
+    /// The block this transaction was included in has been retracted.
+    Retracted(BlockHash),
+    /// Maximum number of finality watchers has been reached,
+    /// old watchers are being removed.
+    FinalityTimeout(BlockHash),
+    /// Transaction has been finalized by a finality-gadget, e.g GRANDPA
+    Finalized(BlockHash),
+    /// Transaction has been replaced in the pool, by another transaction
+    /// that provides the same tags. (e.g. same (sender, nonce)).
+    Usurped(Hash),
+    /// Transaction has been dropped from the pool because of the limit.
+    Dropped,
+    /// Transaction is no longer valid in the current state.
+    Invalid,
+}
+
+/// ReadProof struct returned by the RPC
+///
+/// # Note
+///
+/// This is copied from `sc-rpc-api` to avoid a dependency on that crate. Therefore it
+/// must be kept compatible with that type from the target substrate version.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadProof<Hash> {
+    /// Block hash used to generate the proof
+    pub at: Hash,
+    /// A proof used to prove that storage entries are included in the storage trie
+    pub proof: Vec<Bytes>,
 }
 
 /// Client for substrate rpc interfaces
@@ -387,8 +436,8 @@ impl<T: Runtime> Rpc<T> {
         let events_sub = self.subscribe_events().await?;
         let mut xt_sub = self.watch_extrinsic(extrinsic).await?;
 
-        while let status = xt_sub.next().await {
-            log::info!("received status {:?}", status);
+        while let status = xt_sub.next().await.unwrap() {
+            // log::info!("received status {:?}", status);
             match status {
                 // ignore in progress extrinsic for now
                 TransactionStatus::Future

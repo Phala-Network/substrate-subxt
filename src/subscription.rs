@@ -86,7 +86,7 @@ impl<T: Runtime> EventSubscription<T> {
             if self.finished {
                 return None
             }
-            let change_set = self.subscription.next().await;
+            let change_set = self.subscription.next().await?;
             if let Some(hash) = self.block.as_ref() {
                 if &change_set.block == hash {
                     self.finished = true;

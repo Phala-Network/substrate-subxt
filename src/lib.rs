@@ -54,8 +54,8 @@ use futures::future;
 use jsonrpsee::client::{
     WsClient,
     WsSubscription as Subscription,
+    WsConfig,
 };
-use sc_rpc_api::state::ReadProof;
 use sp_core::{
     storage::{
         StorageChangeSet,
@@ -97,6 +97,7 @@ pub use crate::{
     rpc::{
         BlockNumber,
         ExtrinsicSuccess,
+        ReadProof,
         SystemProperties,
     },
     runtimes::*,
@@ -185,7 +186,7 @@ impl<T: Runtime> ClientBuilder<T> {
         } else {
             let url = self.url.as_deref().unwrap_or("ws://127.0.0.1:9944");
             if url.starts_with("ws://") || url.starts_with("wss://") {
-                WsClient::new(url).await?
+                WsClient::new(url, WsConfig::default()).await?
             } else {
                 todo!("this is dummy implementation; HTTP is missing");
             }
