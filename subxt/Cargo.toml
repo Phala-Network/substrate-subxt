@@ -29,8 +29,8 @@ thiserror = "1.0.24"
 
 subxt-macro = { version = "0.18.1", path = "../macro" }
 
-sp-core = { version = "6.0.0", default-features = false  }
-sp-runtime = "6.0.0"
+sp-core = { path = "../../substrate/primitives/core", default-features = false }
+sp-runtime = { path = "../../substrate/primitives/runtime" }
 
 frame-metadata = "15.0.0"
 derivative = "2.2.0"
