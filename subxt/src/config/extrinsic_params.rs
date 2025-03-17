@@ -151,15 +151,18 @@ impl<T: Config, Tip: Debug + Encode + 'static> ExtrinsicParams<T::Index, T::Hash
     fn encode_extra_to(&self, v: &mut Vec<u8>) {
         let nonce: u64 = self.nonce.into();
         let tip = Encoded(self.tip.encode());
-        (self.era, Compact(nonce), tip).encode_to(v);
+        let check_metadata_hash_mode = 0u8;
+        (self.era, Compact(nonce), tip, check_metadata_hash_mode).encode_to(v);
     }
 
     fn encode_additional_to(&self, v: &mut Vec<u8>) {
+        let check_metadata_hash = None::<()>;
         (
             self.spec_version,
             self.transaction_version,
             self.genesis_hash,
             self.mortality_checkpoint,
+            check_metadata_hash,
         )
             .encode_to(v);
     }
